@@ -43,5 +43,11 @@
     "ttlSeconds": 300,
     "maxEntries": 1000
   },
+  "tools": {
+    "hidden": [
+      "everything__echo",
+      "everything__longRunningOperation"
+    ]
+  },
   "logLevel": "info"
 }

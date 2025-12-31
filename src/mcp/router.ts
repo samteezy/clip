@@ -24,6 +24,21 @@ export class Router {
     args: Record<string, unknown>
   ): Promise<CallToolResult> {
     const logger = getLogger();
+
+    // Check if tool is hidden (reject even if it exists)
+    if (this.aggregator.isToolHidden(namespacedName)) {
+      logger.warn(`Rejected call to hidden tool: ${namespacedName}`);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error: Tool '${namespacedName}' not found`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
     const routing = this.aggregator.findTool(namespacedName);
 
     if (!routing) {

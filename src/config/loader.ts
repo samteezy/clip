@@ -74,6 +74,14 @@ export function generateExampleConfig(): MCPithConfig {
       ttlSeconds: 300,
       maxEntries: 1000,
     },
+    tools: {
+      hidden: [
+        // Example: hide all tools from an upstream
+        // "github__*",
+        // Example: hide specific tool
+        // "example-server__dangerous_tool",
+      ],
+    },
     logLevel: "info",
   };
 }

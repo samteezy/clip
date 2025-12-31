@@ -70,9 +70,7 @@ Three strategies auto-selected based on content:
 
 The following features are planned for future implementation:
 
-1. **Tool Hiding** - Ability to disable/hide certain tools entirely from being exposed to clients. Many MCPs include extra tools that users may not want to expose.
-
-2. **Tool Renaming/Rewriting** - Ability for users to rewrite tool names and/or descriptions. This allows customizing how tools appear to clients without modifying upstream servers.
+1. **Tool Renaming/Rewriting** - Ability for users to rewrite tool names and/or descriptions. This allows customizing how tools appear to clients without modifying upstream servers.
 
 ## References
 - MCPO: https://github.com/open-webui/mcpo/tree/main

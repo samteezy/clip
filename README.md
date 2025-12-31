@@ -17,6 +17,7 @@ Upstream MCP Server(s)
 ## Features
 
 - **Transparent proxy** - Works with any MCP client and server
+- **Tool hiding** - Hide unwanted tools to reduce context pollution and improve model focus
 - **Smart compression** - Auto-detects content type (JSON, code, text) and applies appropriate compression strategy
 - **Per-tool policies** - Configure different compression thresholds for different tools
 - **Token-based threshold** - Only compresses responses exceeding configurable token count
@@ -145,6 +146,39 @@ Each tool policy can override any of: `enabled`, `tokenThreshold`, `maxOutputTok
 | `enabled` | `boolean` | Enable/disable caching |
 | `ttlSeconds` | `number` | Cache entry TTL |
 | `maxEntries` | `number` | Maximum cache entries |
+
+### Tools
+
+Configure tool visibility to reduce context pollution:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `hidden` | `string[]` | Tool patterns to hide from clients |
+
+#### Hiding Tools
+
+Many MCP servers expose tools you may not want cluttering your context. Hide them:
+
+```json
+{
+  "tools": {
+    "hidden": [
+      "github__*",
+      "server__dangerous_tool",
+      "*__internal_*"
+    ]
+  }
+}
+```
+
+Patterns support `*` as wildcard:
+- `"github__*"` - Hide all tools from the `github` upstream
+- `"*__execute"` - Hide any tool named `execute` from any upstream
+- `"server__debug_*"` - Hide tools starting with `debug_` from `server`
+
+Hidden tools are:
+- Not listed in `tools/list` responses
+- Rejected if called directly (returns "tool not found")
 
 ## Tool Namespacing
 

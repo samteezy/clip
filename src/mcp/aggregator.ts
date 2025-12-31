@@ -4,8 +4,14 @@ import type {
   AggregatedTool,
   AggregatedResource,
   AggregatedPrompt,
+  ToolsConfig,
 } from "../types.js";
+import { matchesAnyGlob } from "../utils/index.js";
 import { getLogger } from "../logger.js";
+
+export interface AggregatorOptions {
+  toolsConfig?: ToolsConfig;
+}
 
 /**
  * Aggregates tools, resources, and prompts from multiple upstream servers.
@@ -13,12 +19,17 @@ import { getLogger } from "../logger.js";
  */
 export class Aggregator {
   private clients: Map<string, UpstreamClient> = new Map();
+  private hiddenPatterns: string[];
 
   // Caches for aggregated items
   private toolsCache: AggregatedTool[] = [];
   private resourcesCache: AggregatedResource[] = [];
   private promptsCache: AggregatedPrompt[] = [];
   private cacheValid = false;
+
+  constructor(options: AggregatorOptions = {}) {
+    this.hiddenPatterns = options.toolsConfig?.hidden || [];
+  }
 
   /**
    * Register an upstream client
@@ -41,6 +52,14 @@ export class Aggregator {
    */
   getClient(clientId: string): UpstreamClient | undefined {
     return this.clients.get(clientId);
+  }
+
+  /**
+   * Check if a tool is hidden
+   */
+  isToolHidden(namespacedName: string): boolean {
+    if (this.hiddenPatterns.length === 0) return false;
+    return matchesAnyGlob(namespacedName, this.hiddenPatterns);
   }
 
   /**
@@ -95,24 +114,39 @@ export class Aggregator {
     this.promptsCache = prompts;
     this.cacheValid = true;
 
+    // Log hidden tools count
+    const hiddenCount = tools.filter((t) => this.isToolHidden(t.name)).length;
+    const visibleCount = tools.length - hiddenCount;
+
     logger.info(
-      `Aggregated ${tools.length} tools, ${resources.length} resources, ${prompts.length} prompts`
+      `Aggregated ${tools.length} tools (${visibleCount} visible, ${hiddenCount} hidden), ${resources.length} resources, ${prompts.length} prompts`
     );
   }
 
   /**
-   * List all aggregated tools
+   * List all aggregated tools (excluding hidden ones)
    */
   async listTools(): Promise<Tool[]> {
     if (!this.cacheValid) {
       await this.refresh();
     }
-    // Return tools without the internal metadata
-    return this.toolsCache.map((t) => ({
-      name: t.name,
-      description: t.description,
-      inputSchema: t.inputSchema,
-    }));
+
+    const logger = getLogger();
+
+    // Filter out hidden tools
+    return this.toolsCache
+      .filter((t) => {
+        const hidden = this.isToolHidden(t.name);
+        if (hidden) {
+          logger.debug(`Hiding tool: ${t.name}`);
+        }
+        return !hidden;
+      })
+      .map((t) => ({
+        name: t.name,
+        description: t.description,
+        inputSchema: t.inputSchema,
+      }));
   }
 
   /**

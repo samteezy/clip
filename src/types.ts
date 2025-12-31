@@ -90,6 +90,17 @@ export interface CacheConfig {
 }
 
 /**
+ * Tool filtering configuration
+ */
+export interface ToolsConfig {
+  /**
+   * Tools to hide from clients (not exposed in tools/list, calls rejected).
+   * Supports exact names ("server__tool") or glob patterns ("server__*", "*__dangerous_*")
+   */
+  hidden?: string[];
+}
+
+/**
  * Main MCPith configuration
  */
 export interface MCPithConfig {
@@ -101,6 +112,8 @@ export interface MCPithConfig {
   compression: CompressionConfig;
   /** Cache configuration */
   cache: CacheConfig;
+  /** Tool filtering configuration */
+  tools?: ToolsConfig;
   /** Log level */
   logLevel?: "error" | "warn" | "info" | "debug";
 }

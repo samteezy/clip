@@ -73,6 +73,10 @@ export const cacheSchema = z.object({
   maxEntries: z.number().int().positive().default(1000),
 });
 
+export const toolsSchema = z.object({
+  hidden: z.array(z.string()).optional(),
+});
+
 export const configSchema = z.object({
   downstream: downstreamSchema,
   upstreams: z.array(upstreamServerSchema).min(1),
@@ -82,6 +86,7 @@ export const configSchema = z.object({
     ttlSeconds: 300,
     maxEntries: 1000,
   }),
+  tools: toolsSchema.optional(),
   logLevel: z.enum(["error", "warn", "info", "debug"]).default("info"),
 });
 
