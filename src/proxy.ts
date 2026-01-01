@@ -96,6 +96,9 @@ export async function createProxy(config: MCPithConfig): Promise<MCPithProxy> {
       if (config.downstream.transport === "streamable-http") {
         expressApp.post("/mcp", handler);
         expressApp.get("/mcp", handler); // For SSE upgrades
+        // Also support root path for clients that expect endpoint at /
+        expressApp.post("/", handler);
+        expressApp.get("/", handler);
       } else if (config.downstream.transport === "sse") {
         expressApp.get("/sse", handler);
         expressApp.post("/messages", handler);
