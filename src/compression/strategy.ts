@@ -62,7 +62,8 @@ export function getCompressionPrompt(
   strategy: CompressionStrategy,
   content: string,
   maxTokens?: number,
-  goal?: string
+  goal?: string,
+  customInstructions?: string
 ): string {
   const tokenLimit = maxTokens
     ? `Keep your response under ${maxTokens} tokens.`
@@ -72,6 +73,10 @@ export function getCompressionPrompt(
     ? `\n\nIMPORTANT - The caller's goal: "${goal}"\nPrioritize information relevant to this goal. Omit content that doesn't serve this purpose.`
     : "";
 
+  const customInstructionBlock = customInstructions
+    ? `\n\nADDITIONAL INSTRUCTIONS: ${customInstructions}`
+    : "";
+
   switch (strategy) {
     case "json":
       return `<document type="json">
@@ -79,7 +84,7 @@ ${content}
 </document>
 
 <task>
-Compress the JSON above while preserving structure and important values. Remove redundant whitespace, shorten keys if possible, and summarize repeated patterns.${goalInstruction}
+Compress the JSON above while preserving structure and important values. Remove redundant whitespace, shorten keys if possible, and summarize repeated patterns.${goalInstruction}${customInstructionBlock}
 
 ${tokenLimit}
 Output only the compressed JSON, no explanations.
@@ -97,7 +102,7 @@ Summarize the code above while preserving:
 - Important comments
 - Return types and values
 
-Remove non-critical implementation details.${goalInstruction}
+Remove non-critical implementation details.${goalInstruction}${customInstructionBlock}
 
 ${tokenLimit}
 Output only the summarized code or pseudocode, no explanations.
@@ -110,7 +115,7 @@ ${content}
 </document>
 
 <task>
-Compress the document above while preserving all important information, facts, and data. Remove redundancy and verbose language.${goalInstruction}
+Compress the document above while preserving all important information, facts, and data. Remove redundancy and verbose language.${goalInstruction}${customInstructionBlock}
 
 ${tokenLimit}
 Output only the compressed text, no explanations.

@@ -131,14 +131,32 @@ You can override the default policy for specific tools:
       },
       "my-server__search": {
         "tokenThreshold": 200,
-        "maxOutputTokens": 100
+        "maxOutputTokens": 100,
+        "customInstructions": "Focus on error messages and stack traces. Preserve file paths."
       }
     }
   }
 }
 ```
 
-Each tool policy can override any of: `enabled`, `tokenThreshold`, `maxOutputTokens`
+Each tool policy can override any of: `enabled`, `tokenThreshold`, `maxOutputTokens`, `customInstructions`
+
+#### Custom Instructions
+
+The `customInstructions` field lets you guide the compression LLM for specific tools:
+
+```json
+"toolPolicies": {
+  "fetch__fetch": {
+    "customInstructions": "Preserve all URLs, dates, and code examples verbatim."
+  },
+  "database__query": {
+    "customInstructions": "Focus on row counts and error messages. Omit raw data rows."
+  }
+}
+```
+
+These instructions are appended to the compression prompt, allowing you to customize what information is preserved or omitted for each tool.
 
 ### Cache
 

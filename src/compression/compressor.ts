@@ -59,6 +59,7 @@ export class Compressor {
       enabled: toolPolicy.enabled ?? defaultPolicy.enabled,
       tokenThreshold: toolPolicy.tokenThreshold ?? defaultPolicy.tokenThreshold,
       maxOutputTokens: toolPolicy.maxOutputTokens ?? defaultPolicy.maxOutputTokens,
+      customInstructions: toolPolicy.customInstructions,
     };
   }
 
@@ -102,7 +103,8 @@ export class Compressor {
         strategy,
         content,
         policy.maxOutputTokens,
-        goal
+        goal,
+        policy.customInstructions
       );
 
       logger.debug("Calling LLM for compression...");

@@ -152,6 +152,8 @@ export interface CompressionPolicy {
   maxOutputTokens?: number;
   /** Whether to add _mcpith_goal field for context-aware compression */
   goalAware?: boolean;
+  /** Custom instructions to guide the LLM during compression */
+  customInstructions?: string;
 }
 
 /**
@@ -179,6 +181,7 @@ export interface ResolvedCompressionPolicy {
   enabled: boolean;
   tokenThreshold: number;
   maxOutputTokens?: number;
+  customInstructions?: string;
 }
 
 /**

@@ -32,9 +32,10 @@
       "filesystem__read_file": {
         "enabled": false
       },
-      "everything__fetch": {
-        "tokenThreshold": 200,
-        "maxOutputTokens": 100
+      "fetch__fetch": {
+        "tokenThreshold": 500,
+        "maxOutputTokens": 200,
+        "customInstructions": "Preserve all URLs, dates, and code examples verbatim."
       }
     }
   },
