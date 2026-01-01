@@ -57,10 +57,12 @@ Three strategies auto-selected based on content:
 - Node.js 20+, TypeScript 5.x
 - `@modelcontextprotocol/sdk` - MCP implementation
 - `ai` / `@ai-sdk/openai-compatible` - LLM API client (Vercel)
-- `gpt-tokenizer` - Token counting
+- `ai-tokenizer` - Token counting
 - `winston` - Logging
 - `vitest` - Testing
 - `tsup` - Build
+
+Note that anytime you're working with npm packages, you're always checking to ensure we're on the most current version.
 
 ## Testing
 
@@ -115,4 +117,4 @@ The following features are planned for future implementation:
 - MCPO: https://github.com/open-webui/mcpo/tree/main
 - MCP SDK: https://github.com/modelcontextprotocol/typescript-sdk
 - Vercel SDK: https://ai-sdk.dev/docs/getting-started/nodejs
-- gpt-tokenizer: https://www.npmjs.com/package/gpt-tokenizer
+- ai-tokenizer: https://www.npmjs.com/package/ai-tokenizer
