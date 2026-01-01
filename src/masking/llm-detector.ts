@@ -1,5 +1,5 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { generateText } from "ai";
+import { streamText } from "ai";
 import type { MaskingLLMConfig, PIIType } from "../types.js";
 import { getLogger } from "../logger.js";
 
@@ -66,11 +66,13 @@ If no PII is found, return the original text unchanged with hasPII: false and em
 </task>`;
 
     try {
-      const { text: response } = await generateText({
+      const result = streamText({
         model: this.provider(this.model),
         prompt,
-        maxTokens: Math.max(500, text.length * 2),
+        maxOutputTokens: Math.max(500, text.length * 2),
       });
+
+      const response = await result.text;
 
       // Try to parse JSON response
       const jsonMatch = response.match(/\{[\s\S]*\}/);

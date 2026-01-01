@@ -1,5 +1,6 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { generateText } from "ai";
+import type { LanguageModelV3Middleware, LanguageModelV3StreamPart } from "@ai-sdk/provider";
+import { streamText, wrapLanguageModel } from "ai";
 import { encode } from "gpt-tokenizer";
 import type {
   CallToolResult,
@@ -102,15 +103,102 @@ export class Compressor {
         goal
       );
 
-      const { text } = await generateText({
+      // Middleware to extract <think> tags and combine with main text
+      const thinkExtractionMiddleware: LanguageModelV3Middleware = {
+        specificationVersion: "v3",
+        wrapStream: async ({ doStream }) => {
+          const { stream, ...rest } = await doStream();
+
+          let inThinkTag = false;
+          let thinkContent = "";
+          let mainContent = "";
+
+          const transformStream = new TransformStream<
+            LanguageModelV3StreamPart,
+            LanguageModelV3StreamPart
+          >({
+            transform(chunk, controller) {
+              if (chunk.type === "text-delta") {
+                let text = chunk.delta;
+
+                // Process text for <think> tags
+                while (text.length > 0) {
+                  if (inThinkTag) {
+                    const endIdx = text.indexOf("</think>");
+                    if (endIdx !== -1) {
+                      thinkContent += text.substring(0, endIdx);
+                      text = text.substring(endIdx + 8);
+                      inThinkTag = false;
+                    } else {
+                      thinkContent += text;
+                      text = "";
+                    }
+                  } else {
+                    const startIdx = text.indexOf("<think>");
+                    if (startIdx !== -1) {
+                      mainContent += text.substring(0, startIdx);
+                      text = text.substring(startIdx + 7);
+                      inThinkTag = true;
+                    } else {
+                      mainContent += text;
+                      text = "";
+                    }
+                  }
+                }
+
+                // Emit transformed chunk with combined content
+                const combined = mainContent.trim() || thinkContent.trim();
+                controller.enqueue({
+                  ...chunk,
+                  delta: combined,
+                });
+              } else {
+                controller.enqueue(chunk);
+              }
+            },
+          });
+
+          return {
+            stream: stream.pipeThrough(transformStream),
+            ...rest,
+          };
+        },
+      };
+
+      // Wrap model with think extraction middleware
+      const wrappedModel = wrapLanguageModel({
         model: this.provider(this.config.model),
-        prompt,
-        maxTokens: policy.maxOutputTokens,
+        middleware: thinkExtractionMiddleware,
       });
 
-      logger.debug(`Raw LLM response:\n${text}`);
+      const result = streamText({
+        model: wrappedModel,
+        prompt,
+        maxOutputTokens: policy.maxOutputTokens,
+      });
 
-      const compressedTokens = this.countTokens(text);
+      logger.debug("Awaiting stream completion...");
+
+      // Wait for full text
+      const compressedText = await result.text;
+
+      logger.debug(`Stream complete. Response length: ${compressedText.length} chars`);
+      logger.debug(`Output:\n${compressedText.substring(0, 200)}${compressedText.length > 200 ? "..." : ""}`);
+
+      // Validate non-empty response
+      if (!compressedText || compressedText.length === 0) {
+        logger.warn("LLM returned empty response, using original content");
+        return {
+          original: content,
+          compressed: content,
+          strategy,
+          originalTokens,
+          compressedTokens: originalTokens,
+          wasCompressed: false,
+        };
+      }
+
+      const compressedTokens = this.countTokens(compressedText);
       const ratio = ((1 - compressedTokens / originalTokens) * 100).toFixed(1);
 
       logger.info(
@@ -119,7 +207,7 @@ export class Compressor {
 
       return {
         original: content,
-        compressed: text,
+        compressed: compressedText,
         strategy,
         originalTokens,
         compressedTokens,
