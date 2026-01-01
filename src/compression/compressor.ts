@@ -1,6 +1,5 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import type { LanguageModelV3Middleware, LanguageModelV3StreamPart } from "@ai-sdk/provider";
-import { streamText, wrapLanguageModel } from "ai";
+import { generateText } from "ai";
 import { encode } from "gpt-tokenizer";
 import type {
   CallToolResult,
@@ -103,86 +102,32 @@ export class Compressor {
         goal
       );
 
-      // Middleware to extract <think> tags and combine with main text
-      const thinkExtractionMiddleware: LanguageModelV3Middleware = {
-        specificationVersion: "v3",
-        wrapStream: async ({ doStream }) => {
-          const { stream, ...rest } = await doStream();
+      logger.debug("Calling LLM for compression...");
 
-          let inThinkTag = false;
-          let thinkContent = "";
-          let mainContent = "";
-
-          const transformStream = new TransformStream<
-            LanguageModelV3StreamPart,
-            LanguageModelV3StreamPart
-          >({
-            transform(chunk, controller) {
-              if (chunk.type === "text-delta") {
-                let text = chunk.delta;
-
-                // Process text for <think> tags
-                while (text.length > 0) {
-                  if (inThinkTag) {
-                    const endIdx = text.indexOf("</think>");
-                    if (endIdx !== -1) {
-                      thinkContent += text.substring(0, endIdx);
-                      text = text.substring(endIdx + 8);
-                      inThinkTag = false;
-                    } else {
-                      thinkContent += text;
-                      text = "";
-                    }
-                  } else {
-                    const startIdx = text.indexOf("<think>");
-                    if (startIdx !== -1) {
-                      mainContent += text.substring(0, startIdx);
-                      text = text.substring(startIdx + 7);
-                      inThinkTag = true;
-                    } else {
-                      mainContent += text;
-                      text = "";
-                    }
-                  }
-                }
-
-                // Emit transformed chunk with combined content
-                const combined = mainContent.trim() || thinkContent.trim();
-                controller.enqueue({
-                  ...chunk,
-                  delta: combined,
-                });
-              } else {
-                controller.enqueue(chunk);
-              }
-            },
-          });
-
-          return {
-            stream: stream.pipeThrough(transformStream),
-            ...rest,
-          };
-        },
-      };
-
-      // Wrap model with think extraction middleware
-      const wrappedModel = wrapLanguageModel({
+      const result = await generateText({
         model: this.provider(this.config.model),
-        middleware: thinkExtractionMiddleware,
-      });
-
-      const result = streamText({
-        model: wrappedModel,
         prompt,
         maxOutputTokens: policy.maxOutputTokens,
       });
 
-      logger.debug("Awaiting stream completion...");
+      // Extract <think> tags and main content
+      const rawText = result.text;
+      logger.debug(`Raw LLM response (${rawText.length} chars): ${rawText}`);
 
-      // Wait for full text
-      const compressedText = await result.text;
+      // Remove think tags to get main content
+      const mainContent = rawText.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 
-      logger.debug(`Stream complete. Response length: ${compressedText.length} chars`);
+      // Extract think content as fallback
+      let thinkContent = "";
+      const thinkMatches = rawText.matchAll(/<think>([\s\S]*?)<\/think>/g);
+      for (const match of thinkMatches) {
+        thinkContent += match[1];
+      }
+
+      // Use main content, or fall back to think content if empty
+      const compressedText = mainContent || thinkContent.trim();
+
+      logger.debug(`Processed response length: ${compressedText.length} chars`);
       logger.debug(`Output:\n${compressedText.substring(0, 200)}${compressedText.length > 200 ? "..." : ""}`);
 
       // Validate non-empty response
@@ -249,6 +194,7 @@ export class Compressor {
     );
 
     if (textContents.length === 0) {
+      logger.debug(`Skipping compression for '${toolName || "unknown"}': no text content in response`);
       return result;
     }
 
@@ -257,11 +203,14 @@ export class Compressor {
     const tokenCount = this.countTokens(combinedText);
 
     if (tokenCount <= policy.tokenThreshold) {
+      logger.debug(
+        `Skipping compression for '${toolName || "unknown"}': ${tokenCount} tokens <= ${policy.tokenThreshold} threshold`
+      );
       return result;
     }
 
     logger.debug(
-      `Tool '${toolName || "unknown"}' result has ${tokenCount} tokens (threshold: ${policy.tokenThreshold}), compressing...`
+      `Compressing '${toolName || "unknown"}': ${tokenCount} tokens > ${policy.tokenThreshold} threshold`
     );
 
     // Compress the combined text with goal context
@@ -302,12 +251,14 @@ export class Compressor {
    * Compress a resource read result (uses default policy)
    */
   async compressResourceResult(
-    result: ReadResourceResult
+    result: ReadResourceResult,
+    resourceUri?: string
   ): Promise<ReadResourceResult> {
     const logger = getLogger();
     const policy = this.resolvePolicy(); // Use default policy for resources
 
     if (!policy.enabled) {
+      logger.debug(`Compression disabled for resource: ${resourceUri || "unknown"}`);
       return result;
     }
 
@@ -317,10 +268,15 @@ export class Compressor {
           const tokenCount = this.countTokens(content.text);
 
           if (tokenCount <= policy.tokenThreshold) {
+            logger.debug(
+              `Skipping compression for resource '${resourceUri || "unknown"}': ${tokenCount} tokens <= ${policy.tokenThreshold} threshold`
+            );
             return content;
           }
 
-          logger.debug(`Resource content has ${tokenCount} tokens, compressing...`);
+          logger.debug(
+            `Compressing resource '${resourceUri || "unknown"}': ${tokenCount} tokens > ${policy.tokenThreshold} threshold`
+          );
           const compressed = await this.compress(content.text, policy);
 
           if (!compressed.wasCompressed) {

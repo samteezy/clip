@@ -182,7 +182,7 @@ export class DownstreamServer {
       const result = await this.router.readResource(uri);
 
       // Compress the result if needed
-      return await this.compressor.compressResourceResult(result);
+      return await this.compressor.compressResourceResult(result, uri);
     });
 
     // List prompts - aggregate from all upstreams

@@ -130,8 +130,10 @@ export class UpstreamClient {
     name: string,
     args: Record<string, unknown>
   ): Promise<CallToolResult> {
+    const logger = getLogger();
     this.ensureConnected();
     const result = await this.client.callTool({ name, arguments: args });
+    logger.debug(`Raw upstream response from '${this.config.id}' for tool '${name}': ${JSON.stringify(result)}`);
     // Handle both old (toolResult) and new (content) response formats
     if ("content" in result) {
       return result as CallToolResult;
@@ -146,8 +148,11 @@ export class UpstreamClient {
    * Read a resource from this upstream
    */
   async readResource(uri: string): Promise<ReadResourceResult> {
+    const logger = getLogger();
     this.ensureConnected();
-    return await this.client.readResource({ uri });
+    const result = await this.client.readResource({ uri });
+    logger.debug(`Raw upstream response from '${this.config.id}' for resource '${uri}': ${JSON.stringify(result)}`);
+    return result;
   }
 
   /**
@@ -157,8 +162,11 @@ export class UpstreamClient {
     name: string,
     args?: Record<string, string>
   ): Promise<GetPromptResult> {
+    const logger = getLogger();
     this.ensureConnected();
-    return await this.client.getPrompt({ name, arguments: args });
+    const result = await this.client.getPrompt({ name, arguments: args });
+    logger.debug(`Raw upstream response from '${this.config.id}' for prompt '${name}': ${JSON.stringify(result)}`);
+    return result;
   }
 
   private async createTransport(): Promise<Transport> {
