@@ -31,7 +31,7 @@ Upstream MCP Server(s)
 
 - **Transparent proxy** - Works with any MCP client and server
 - **Smart compression** - Auto-detects content type (JSON, code, text) and applies appropriate compression strategy, with per-tool configurability
-- **In-memory caching** - Reduces repeated compressions with TTL-based cache
+- **In-memory caching** - Reduces repeated compressions with TTL-based cache *(not yet implemented)*
 - **Tool hiding** - Hide unwanted tools to reduce context pollution and improve model focus
 - **Description overrides** - Customize tool descriptions to better steer client LLM behavior
 - **PII masking** - Mask sensitive data (emails, SSNs, phone numbers, etc.) before sending to upstream servers
@@ -119,7 +119,7 @@ mcp-context-proxy
 | `apiKey` | `string` | API key (optional for local models) |
 | `model` | `string` | Model identifier |
 | `defaultPolicy` | `object` | Default compression policy for all tools |
-| `toolPolicies` | `object` | Per-tool policy overrides (keyed by namespaced tool name) |
+| `goalAware` | `boolean` | Inject `_mcpcp_goal` field into tool schemas (default: true) |
 
 #### Default Policy
 
@@ -131,57 +131,66 @@ mcp-context-proxy
 
 #### Per-Tool Policies
 
-You can override the default policy for specific tools:
+You can override the default compression policy for specific tools within each upstream's `tools` configuration. Use the tool's **original name** (not namespaced):
 
 ```json
 {
-  "compression": {
-    "baseUrl": "http://localhost:8080/v1",
-    "model": "your-model",
-    "defaultPolicy": {
-      "enabled": true,
-      "tokenThreshold": 1000
-    },
-    "toolPolicies": {
-      "my-server__read_file": {
-        "enabled": false
-      },
-      "my-server__search": {
-        "tokenThreshold": 200,
-        "maxOutputTokens": 100,
-        "customInstructions": "Focus on error messages and stack traces. Preserve file paths."
+  "upstreams": [
+    {
+      "id": "my-server",
+      "name": "My Server",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "some-mcp-server"],
+      "tools": {
+        "read_file": {
+          "compression": { "enabled": false }
+        },
+        "search": {
+          "compression": {
+            "tokenThreshold": 200,
+            "maxOutputTokens": 100,
+            "customInstructions": "Focus on error messages and stack traces. Preserve file paths."
+          }
+        }
       }
     }
-  }
+  ]
 }
 ```
 
-Each tool policy can override any of: `enabled`, `tokenThreshold`, `maxOutputTokens`, `customInstructions`
+Each tool's `compression` object can override: `enabled`, `tokenThreshold`, `maxOutputTokens`, `customInstructions`
 
 #### Custom Instructions
 
 The `customInstructions` field lets you guide the compression LLM for specific tools:
 
 ```json
-"toolPolicies": {
-  "fetch__fetch": {
-    "customInstructions": "Preserve all URLs, dates, and code examples verbatim."
+"tools": {
+  "fetch": {
+    "compression": {
+      "customInstructions": "Preserve all URLs, dates, and code examples verbatim."
+    }
   },
-  "database__query": {
-    "customInstructions": "Focus on row counts and error messages. Omit raw data rows."
+  "query": {
+    "compression": {
+      "customInstructions": "Focus on row counts and error messages. Omit raw data rows."
+    }
   }
 }
 ```
 
 These instructions are appended to the compression prompt, allowing you to customize what information is preserved or omitted for each tool.
 
-### Cache
+### Cache (NOT YET IMPLEMENTED)
+
+> **Note:** Cache configuration is parsed but caching is not yet wired into the request flow. This feature is planned for a future release.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `enabled` | `boolean` | Enable/disable caching |
-| `ttlSeconds` | `number` | Cache entry TTL |
-| `maxEntries` | `number` | Maximum cache entries |
+| `ttlSeconds` | `number` | Cache entry TTL (default: 300) |
+| `maxEntries` | `number` | Maximum cache entries (default: 1000) |
 
 ### Tool Configuration
 
@@ -282,16 +291,18 @@ Per-tool masking overrides are configured in each upstream's `tools` object (see
 
 #### Supported PII Types
 
-| Type | Placeholder | Confidence | Example |
-|------|-------------|------------|---------|
-| `email` | `[EMAIL_REDACTED]` | high | `user@example.com` |
-| `ssn` | `[SSN_REDACTED]` | medium | `123-45-6789` |
-| `phone` | `[PHONE_REDACTED]` | medium | `555-123-4567` |
-| `credit_card` | `[CREDIT_CARD_REDACTED]` | high | `4111111111111111` |
-| `ip_address` | `[IP_REDACTED]` | high | `192.168.1.100` |
-| `date_of_birth` | `[DOB_REDACTED]` | high | `01/15/1990` (only with DOB/birth keywords) |
-| `passport` | `[PASSPORT_REDACTED]` | low | `A12345678` |
-| `driver_license` | `[DL_REDACTED]` | low | `D1234567` |
+Placeholders are numbered sequentially per type (e.g., `[EMAIL_1]`, `[EMAIL_2]`) to allow proper restoration of unique values.
+
+| Type | Placeholder Format | Confidence | Example |
+|------|-------------------|------------|---------|
+| `email` | `[EMAIL_n]` | high | `user@example.com` |
+| `ssn` | `[SSN_n]` | medium | `123-45-6789` |
+| `phone` | `[PHONE_n]` | medium | `555-123-4567` |
+| `credit_card` | `[CREDIT_CARD_n]` | high | `4111111111111111` |
+| `ip_address` | `[IP_n]` | high | `192.168.1.100` |
+| `date_of_birth` | `[DOB_n]` | high | `01/15/1990` (only with DOB/birth keywords) |
+| `passport` | `[PASSPORT_n]` | low | `A12345678` |
+| `driver_license` | `[DL_n]` | low | `D1234567` |
 
 **Note:** Low-confidence patterns (passport, driver_license) may produce false positives. Consider using `llmFallback: true` for these.
 
