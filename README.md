@@ -1,6 +1,6 @@
 # mcproxy
 
-**mcproxy Lightens Inference Processing**
+**MCP Context Proxy**
 
 A transparent MCP (Model Context Protocol) proxy that compresses large tool responses using an external LLM before passing them to resource-constrained local models.
 
@@ -22,7 +22,7 @@ Maybe you're not using `sammcj/mcp-devtools` (you should) or there's a MCP that 
 ```
 MCP Client (Claude Desktop, Cursor, etc.)
     ↓
-mcproxy Proxy
+MCProxy
     ↓ ←── Compression Model (OpenAI-compatible)
 Upstream MCP Server(s)
 ```

@@ -1,5 +1,5 @@
 import type {
-  mcproxyConfig,
+  MCProxyConfig,
   UpstreamServerConfig,
   ToolConfig,
   CompressionPolicy,
@@ -31,7 +31,7 @@ export class ToolConfigResolver {
   private defaultMaskingPolicy: MaskingPolicy & { enabled: boolean };
   private globalGoalAware: boolean;
 
-  constructor(config: mcproxyConfig) {
+  constructor(config: MCProxyConfig) {
     this.upstreams = config.upstreams;
     this.defaultCompressionPolicy = config.compression.defaultPolicy;
     this.defaultMaskingPolicy = config.masking?.defaultPolicy ?? {

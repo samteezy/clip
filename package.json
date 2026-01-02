@@ -7,7 +7,7 @@
   "bin": {
     "mcproxy": "dist/cli.js"
   },
-  "author": "",
+  "author": "Sam Taylor",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/samteezy/mcproxy.git"
