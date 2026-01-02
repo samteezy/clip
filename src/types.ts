@@ -126,6 +126,8 @@ export interface ToolConfig {
   compression?: CompressionPolicy;
   /** Masking settings (overrides global defaultPolicy) */
   masking?: MaskingPolicy;
+  /** Override the tool description exposed to clients */
+  overwriteDescription?: string;
 }
 
 /**

@@ -139,7 +139,7 @@ export class Aggregator {
 
     const logger = getLogger();
 
-    // Filter out hidden tools and inject goal field if enabled
+    // Filter out hidden tools, apply description overrides, and inject goal field
     return this.toolsCache
       .filter((t) => {
         const hidden = this.isToolHidden(t.name);
@@ -148,7 +148,11 @@ export class Aggregator {
         }
         return !hidden;
       })
-      .map((t) => this.injectGoalField(t));
+      .map((t) => {
+        const descOverride = this.resolver.getDescriptionOverride(t.name);
+        const toolWithDesc = descOverride ? { ...t, description: descOverride } : t;
+        return this.injectGoalField(toolWithDesc as AggregatedTool);
+      });
   }
 
   /**

@@ -58,6 +58,8 @@ export function generateExampleConfig(): CLIPConfig {
           // "some-tool": { compression: { enabled: false } },
           // Example: hide a specific tool
           // "dangerous_tool": { hidden: true },
+          // Example: override a tool's description for better LLM steering
+          // "fetch": { overwriteDescription: "Fetches URL contents. Only use when user provides a specific URL." },
           // Example: configure both compression and masking for a tool
           // "heavy-tool": {
           //   compression: { tokenThreshold: 200, maxOutputTokens: 100 },

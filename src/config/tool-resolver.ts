@@ -89,6 +89,13 @@ export class ToolConfigResolver {
   }
 
   /**
+   * Get description override for a tool.
+   */
+  getDescriptionOverride(namespacedName: string): string | undefined {
+    return this.getToolConfig(namespacedName)?.overwriteDescription;
+  }
+
+  /**
    * Resolve compression policy for a tool.
    * Priority: tool-level → global default
    */

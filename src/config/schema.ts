@@ -41,6 +41,7 @@ export const toolConfigSchema = z.object({
   hidden: z.boolean().default(false),
   compression: compressionPolicySchema.optional(),
   masking: maskingPolicySchema.optional(),
+  overwriteDescription: z.string().optional(),
 });
 
 export const upstreamServerSchema = z

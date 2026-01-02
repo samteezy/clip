@@ -33,6 +33,7 @@ Upstream MCP Server(s)
 - **Smart compression** - Auto-detects content type (JSON, code, text) and applies appropriate compression strategy, with per-tool configurability
 - **In-memory caching** - Reduces repeated compressions with TTL-based cache
 - **Tool hiding** - Hide unwanted tools to reduce context pollution and improve model focus
+- **Description overrides** - Customize tool descriptions to better steer client LLM behavior
 - **PII masking** - Mask sensitive data (emails, SSNs, phone numbers, etc.) before sending to upstream servers
 - **Multi-server aggregation** - Connect to multiple upstream MCP servers simultaneously
 - **All transports** - Supports stdio, SSE, and Streamable HTTP for both upstream and downstream
@@ -210,6 +211,31 @@ Patterns support `*` as wildcard:
 Hidden tools are:
 - Not listed in `tools/list` responses
 - Rejected if called directly (returns "tool not found")
+
+#### Overriding Tool Descriptions
+
+You can override tool descriptions to better guide client LLM behavior without modifying prompts:
+
+```json
+{
+  "upstreams": [
+    {
+      "id": "fetch",
+      "name": "Fetch",
+      "transport": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "tools": {
+        "fetch": {
+          "overwriteDescription": "Fetches the contents of a URL. Use this only when the user has provided a specific URL in their message."
+        }
+      }
+    }
+  ]
+}
+```
+
+The override completely replaces the upstream tool's description. If goal-aware compression is enabled, the `_clip_goal` instruction is appended to your custom description.
 
 ### PII Masking
 
