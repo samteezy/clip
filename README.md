@@ -1,15 +1,17 @@
-# MCPith
+# CLIP
+
+**CLIP Lightens Inference Processing**
 
 A transparent MCP (Model Context Protocol) proxy that compresses large tool responses using an external LLM before passing them to resource-constrained local models.
 
-## Why MCPith?
+## Why CLIP?
 
-When running local LLMs on limited VRAM, large context windows from MCP tool responses can overwhelm your model. MCPith sits between your MCP client and upstream MCP servers, automatically compressing responses that exceed a token threshold.
+When running local LLMs on limited VRAM, large context windows from MCP tool responses can overwhelm your model. CLIP sits between your MCP client and upstream MCP servers, automatically compressing responses that exceed a token threshold.
 
 ```
 MCP Client (Claude Desktop, Cursor, etc.)
     ↓
-MCPith Proxy
+CLIP Proxy
     ↓ ←── Compression Model (OpenAI-compatible)
 Upstream MCP Server(s)
 ```
@@ -40,7 +42,7 @@ npm run build
 node dist/cli.js --init
 ```
 
-2. Edit `mcpith.config.json` to configure your upstream servers and compression model:
+2. Edit `clip.config.json` to configure your upstream servers and compression model:
 ```json
 {
   "downstream": {
@@ -287,7 +289,7 @@ Tools from upstream servers are namespaced to avoid conflicts:
 
 ## Compression Strategies
 
-MCPith auto-detects content type and applies the appropriate strategy:
+CLIP auto-detects content type and applies the appropriate strategy:
 
 | Strategy | Trigger | Behavior |
 |----------|---------|----------|

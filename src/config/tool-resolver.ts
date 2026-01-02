@@ -1,5 +1,5 @@
 import type {
-  MCPithConfig,
+  CLIPConfig,
   UpstreamServerConfig,
   ToolConfig,
   CompressionPolicy,
@@ -31,7 +31,7 @@ export class ToolConfigResolver {
   private defaultMaskingPolicy: MaskingPolicy & { enabled: boolean };
   private globalGoalAware: boolean;
 
-  constructor(config: MCPithConfig) {
+  constructor(config: CLIPConfig) {
     this.upstreams = config.upstreams;
     this.defaultCompressionPolicy = config.compression.defaultPolicy;
     this.defaultMaskingPolicy = config.masking?.defaultPolicy ?? {

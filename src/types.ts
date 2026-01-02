@@ -162,7 +162,7 @@ export interface CompressionPolicy {
   tokenThreshold?: number;
   /** Maximum tokens for compressed output */
   maxOutputTokens?: number;
-  /** Whether to add _mcpith_goal field for context-aware compression */
+  /** Whether to add _clip_goal field for context-aware compression */
   goalAware?: boolean;
   /** Custom instructions to guide the LLM during compression */
   customInstructions?: string;
@@ -180,7 +180,7 @@ export interface CompressionConfig {
   model: string;
   /** Default policy applied to all tools */
   defaultPolicy: CompressionPolicy & { enabled: boolean; tokenThreshold: number };
-  /** Enable goal-aware compression globally (adds _mcpith_goal to tool schemas). Default: true */
+  /** Enable goal-aware compression globally (adds _clip_goal to tool schemas). Default: true */
   goalAware?: boolean;
 }
 
@@ -220,9 +220,9 @@ export interface CacheConfig {
 }
 
 /**
- * Main MCPith configuration
+ * Main CLIP configuration
  */
-export interface MCPithConfig {
+export interface CLIPConfig {
   /** Downstream server configuration */
   downstream: DownstreamConfig;
   /** Upstream server configurations */

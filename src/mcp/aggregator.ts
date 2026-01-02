@@ -151,7 +151,7 @@ export class Aggregator {
   }
 
   /**
-   * Inject _mcpith_goal field into tool schema if goal-aware is enabled
+   * Inject _clip_goal field into tool schema if goal-aware is enabled
    */
   private injectGoalField(tool: AggregatedTool): Tool {
     if (!this.isGoalAwareEnabled(tool.name)) {
@@ -164,12 +164,12 @@ export class Aggregator {
 
     // Append instruction to description
     const goalInstruction =
-      "Provide a brief goal in '_mcpith_goal' to improve response relevance.";
+      "Provide a brief goal in '_clip_goal' to improve response relevance.";
     const description = tool.description
       ? `${tool.description} ${goalInstruction}`
       : goalInstruction;
 
-    // Add _mcpith_goal to inputSchema.properties
+    // Add _clip_goal to inputSchema.properties
     const existingSchema = tool.inputSchema;
     const existingProperties = existingSchema.properties || {};
 
@@ -177,7 +177,7 @@ export class Aggregator {
       ...existingSchema,
       properties: {
         ...existingProperties,
-        _mcpith_goal: {
+        _clip_goal: {
           type: "string" as const,
           description:
             "Why you need this data and what information is most important",

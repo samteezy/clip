@@ -22,7 +22,7 @@ export class Router {
   /**
    * Result from callTool including extracted goal
    */
-  public static readonly GOAL_FIELD = "_mcpith_goal";
+  public static readonly GOAL_FIELD = "_clip_goal";
 
   /**
    * Route a tool call to the correct upstream

@@ -1,12 +1,12 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { configSchema } from "./schema.js";
-import type { MCPithConfig } from "../types.js";
+import type { CLIPConfig } from "../types.js";
 
 /**
  * Load and validate configuration from a JSON file
  */
-export function loadConfig(configPath: string): MCPithConfig {
+export function loadConfig(configPath: string): CLIPConfig {
   const absolutePath = resolve(configPath);
 
   if (!existsSync(absolutePath)) {
@@ -33,13 +33,13 @@ export function loadConfig(configPath: string): MCPithConfig {
     throw new Error(`Configuration validation failed:\n${errors}`);
   }
 
-  return result.data as MCPithConfig;
+  return result.data as CLIPConfig;
 }
 
 /**
  * Generate an example configuration
  */
-export function generateExampleConfig(): MCPithConfig {
+export function generateExampleConfig(): CLIPConfig {
   return {
     downstream: {
       transport: "stdio",

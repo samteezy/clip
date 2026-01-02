@@ -1,11 +1,11 @@
 {
-  "name": "mcpith",
+  "name": "clip",
   "version": "0.1.0",
-  "description": "Transparent MCP proxy that compresses large tool responses for resource-constrained local models",
+  "description": "CLIP Lightens Inference Processing - Transparent MCP proxy that compresses large tool responses for resource-constrained local models",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "mcpith": "dist/cli.js"
+    "clip": "dist/cli.js"
   },
   "scripts": {
     "dev": "tsx watch src/cli.ts",

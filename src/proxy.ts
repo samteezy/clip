@@ -1,5 +1,5 @@
 import express from "express";
-import type { MCPithConfig, UpstreamStatus } from "./types.js";
+import type { CLIPConfig, UpstreamStatus } from "./types.js";
 import { UpstreamClient, DownstreamServer, Aggregator, Router } from "./mcp/index.js";
 import { Compressor } from "./compression/index.js";
 import { Masker } from "./masking/index.js";
@@ -7,18 +7,18 @@ import { MemoryCache } from "./cache/index.js";
 import { ToolConfigResolver } from "./config/index.js";
 import { initLogger } from "./logger.js";
 
-export interface MCPithProxy {
+export interface CLIPProxy {
   start(): Promise<void>;
   stop(): Promise<void>;
   getStatus(): UpstreamStatus[];
 }
 
 /**
- * Create and configure the MCPith proxy
+ * Create and configure the CLIP proxy
  */
-export async function createProxy(config: MCPithConfig): Promise<MCPithProxy> {
+export async function createProxy(config: CLIPConfig): Promise<CLIPProxy> {
   const logger = initLogger(config.logLevel);
-  logger.info("Initializing MCPith proxy");
+  logger.info("Initializing CLIP proxy");
 
   // Create tool config resolver for centralized policy lookups
   const resolver = new ToolConfigResolver(config);
@@ -64,7 +64,7 @@ export async function createProxy(config: MCPithConfig): Promise<MCPithProxy> {
   let httpServer: ReturnType<express.Application["listen"]> | null = null;
 
   async function start(): Promise<void> {
-    logger.info("Starting MCPith proxy...");
+    logger.info("Starting CLIP proxy...");
 
     // Connect to all upstreams
     const connectionResults = await Promise.allSettled(
@@ -117,7 +117,7 @@ export async function createProxy(config: MCPithConfig): Promise<MCPithProxy> {
       const host = config.downstream.host || "0.0.0.0";
 
       httpServer = expressApp.listen(port, host, () => {
-        logger.info(`MCPith proxy listening on ${host}:${port}`);
+        logger.info(`CLIP proxy listening on ${host}:${port}`);
       });
     }
 
@@ -126,11 +126,11 @@ export async function createProxy(config: MCPithConfig): Promise<MCPithProxy> {
       cache.cleanup();
     }, 60000); // Cleanup every minute
 
-    logger.info("MCPith proxy started successfully");
+    logger.info("CLIP proxy started successfully");
   }
 
   async function stop(): Promise<void> {
-    logger.info("Stopping MCPith proxy...");
+    logger.info("Stopping CLIP proxy...");
 
     // Close HTTP server if running
     if (httpServer) {
@@ -148,7 +148,7 @@ export async function createProxy(config: MCPithConfig): Promise<MCPithProxy> {
     // Clear cache
     cache.clear();
 
-    logger.info("MCPith proxy stopped");
+    logger.info("CLIP proxy stopped");
   }
 
   function getStatus(): UpstreamStatus[] {

@@ -10,7 +10,7 @@ const { values, positionals } = parseArgs({
     config: {
       type: "string",
       short: "c",
-      default: "mcpith.config.json",
+      default: "clip.config.json",
     },
     init: {
       type: "boolean",
@@ -26,32 +26,34 @@ const { values, positionals } = parseArgs({
 
 function printHelp(): void {
   console.log(`
-MCPith - Transparent MCP Proxy with Response Compression
+CLIP - CLIP Lightens Inference Processing
+
+A transparent MCP proxy with response compression.
 
 Usage:
-  mcpith [options]
-  mcpith --init              Generate example config file
+  clip [options]
+  clip --init              Generate example config file
 
 Options:
-  -c, --config <path>  Path to configuration file (default: mcpith.config.json)
+  -c, --config <path>  Path to configuration file (default: clip.config.json)
   --init               Generate an example configuration file
   -h, --help           Show this help message
 
 Configuration:
-  MCPith reads its configuration from a JSON file. Use --init to generate
+  CLIP reads its configuration from a JSON file. Use --init to generate
   an example configuration file that you can customize.
 
 Example:
   # Generate example config
-  mcpith --init
+  clip --init
 
   # Start proxy with default config
-  mcpith
+  clip
 
   # Start proxy with custom config
-  mcpith -c /path/to/config.json
+  clip -c /path/to/config.json
 
-For more information, see: https://github.com/yourusername/mcpith
+For more information, see: https://github.com/samteezy/clip
 `);
 }
 
@@ -62,7 +64,7 @@ async function main(): Promise<void> {
   }
 
   if (values.init) {
-    const configPath = positionals[0] || "mcpith.config.json";
+    const configPath = positionals[0] || "clip.config.json";
     const exampleConfig = generateExampleConfig();
     writeFileSync(configPath, JSON.stringify(exampleConfig, null, 2));
     console.log(`Generated example configuration: ${configPath}`);
@@ -76,7 +78,7 @@ async function main(): Promise<void> {
     config = loadConfig(values.config as string);
   } catch (error) {
     console.error(`Error loading configuration: ${error instanceof Error ? error.message : error}`);
-    console.error(`\nRun 'mcpith --init' to generate an example configuration.`);
+    console.error(`\nRun 'clip --init' to generate an example configuration.`);
     process.exit(1);
   }
 
