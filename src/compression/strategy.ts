@@ -120,7 +120,7 @@ ${content}
 </document>
 
 <task>
-Compress the document above while preserving all important information, facts, and data. Remove redundancy and verbose language.${customInstructionBlock}
+Summarize the document above while preserving all important information, facts, and data. Remove redundancy and verbose language. ${customInstructionBlock}
 
 ${tokenLimit}
 Output only the compressed text, no explanations.

@@ -145,7 +145,7 @@ export class DownstreamServer {
     // Call tool - route to correct upstream and compress response
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-      logger.debug(`Handling tools/call request: ${name}`);
+      logger.info(`Handling tools/call request: ${name}`);
 
       const { result, goal, restorationMap } = await this.router.callTool(
         name,

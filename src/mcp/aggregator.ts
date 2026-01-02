@@ -172,7 +172,7 @@ export class Aggregator {
 
     // Append instruction to description
     const goalInstruction =
-      "Use '_clip_goal' to share your the information you hope to learn. Can be used to refine the original tool response for your specific data need.";
+      "Use '_clip_goal' to share your the information you hope to learn. Will be used to refine the upstream tool's response for your specific data need.";
     const description = tool.description
       ? `${tool.description} ${goalInstruction}`
       : goalInstruction;
@@ -188,7 +188,7 @@ export class Aggregator {
         _clip_goal: {
           type: "string" as const,
           description:
-            "What specific information you're looking for (e.g., 'the authentication API endpoint', 'references to Ulysses S. Grant'). If no specific search term, leave this blank.",
+            "What specific information you're looking for (e.g., 'the authentication API endpoint', 'references to Ulysses S. Grant').",
         },
       },
     };

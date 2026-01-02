@@ -72,7 +72,7 @@ export class Compressor {
     }
 
     const strategy = detectStrategy(content);
-    logger.debug(
+    logger.info(
       `Compressing ${originalTokens} tokens using '${strategy}' strategy (threshold: ${policy.tokenThreshold})${goal ? ` with goal: "${goal}"` : ""}`
     );
 
@@ -192,7 +192,7 @@ export class Compressor {
       return result;
     }
 
-    logger.debug(
+    logger.info(
       `Compressing '${toolName || "unknown"}': ${tokenCount} tokens > ${policy.tokenThreshold} threshold`
     );
 
