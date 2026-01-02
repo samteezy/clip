@@ -9,14 +9,17 @@ import {
   ReadResourceRequestSchema,
   ListPromptsRequestSchema,
   GetPromptRequestSchema,
+  type CallToolResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { Request, Response } from "express";
-import type { DownstreamConfig } from "../types.js";
+import type { DownstreamConfig, CacheConfig } from "../types.js";
 import type { Aggregator } from "./aggregator.js";
-import type { Router } from "./router.js";
+import { Router } from "./router.js";
 import type { Compressor } from "../compression/compressor.js";
+import type { ToolConfigResolver } from "../config/index.js";
 import { Masker } from "../masking/index.js";
+import { MemoryCache, compressedResultCacheKey } from "../cache/index.js";
 import { getLogger } from "../logger.js";
 
 export interface DownstreamServerOptions {
@@ -24,6 +27,9 @@ export interface DownstreamServerOptions {
   aggregator: Aggregator;
   router: Router;
   compressor: Compressor;
+  cache?: MemoryCache<CallToolResult>;
+  cacheConfig?: CacheConfig;
+  resolver?: ToolConfigResolver;
 }
 
 /**
@@ -35,6 +41,9 @@ export class DownstreamServer {
   private aggregator: Aggregator;
   private router: Router;
   private compressor: Compressor;
+  private cache?: MemoryCache<CallToolResult>;
+  private cacheConfig?: CacheConfig;
+  private resolver?: ToolConfigResolver;
   private transport: Transport | null = null;
 
   constructor(options: DownstreamServerOptions) {
@@ -42,6 +51,9 @@ export class DownstreamServer {
     this.aggregator = options.aggregator;
     this.router = options.router;
     this.compressor = options.compressor;
+    this.cache = options.cache;
+    this.cacheConfig = options.cacheConfig;
+    this.resolver = options.resolver;
 
     this.server = new Server(
       { name: "mcpcp-proxy", version: "0.1.0" },
@@ -132,6 +144,20 @@ export class DownstreamServer {
     this.compressor = compressor;
   }
 
+  /**
+   * Update the cache config (used during hot reload)
+   */
+  setCacheConfig(cacheConfig: CacheConfig): void {
+    this.cacheConfig = cacheConfig;
+  }
+
+  /**
+   * Update the resolver (used during hot reload)
+   */
+  setResolver(resolver: ToolConfigResolver): void {
+    this.resolver = resolver;
+  }
+
   private registerHandlers(): void {
     const logger = getLogger();
 
@@ -147,7 +173,25 @@ export class DownstreamServer {
       const { name, arguments: args } = request.params;
       logger.info(`Handling tools/call request: ${name}`);
 
-      const { result, goal, restorationMap } = await this.router.callTool(
+      // Extract goal for cache key (also extracted by router, but we need it early)
+      const goalArg = args?.[Router.GOAL_FIELD];
+      const goal = typeof goalArg === "string" ? goalArg : undefined;
+
+      // Check per-tool cache TTL (0 = disabled)
+      const toolConfig = this.resolver?.getToolConfig(name);
+      const toolTtl = toolConfig?.cacheTtl;
+
+      // Check cache if enabled and tool allows caching
+      if (this.cache && this.cacheConfig?.enabled && toolTtl !== 0) {
+        const cacheKey = compressedResultCacheKey(name, args || {}, goal);
+        const cached = this.cache.get(cacheKey);
+        if (cached) {
+          logger.debug(`Cache hit: ${name}`);
+          return cached;
+        }
+      }
+
+      const { result, restorationMap } = await this.router.callTool(
         name,
         args || {}
       );
@@ -168,6 +212,17 @@ export class DownstreamServer {
           if (content.type === "text" && typeof content.text === "string") {
             content.text = Masker.restoreOriginals(content.text, restorationMap);
           }
+        }
+      }
+
+      // Cache the compressed result if caching is enabled
+      if (this.cache && this.cacheConfig?.enabled && toolTtl !== 0) {
+        // Check if we should cache errors (default: true)
+        const shouldCacheErrors = this.cacheConfig.cacheErrors !== false;
+        if (!compressedResult.isError || shouldCacheErrors) {
+          const cacheKey = compressedResultCacheKey(name, args || {}, goal);
+          this.cache.set(cacheKey, compressedResult, toolTtl);
+          logger.debug(`Cached result: ${name}`);
         }
       }
 

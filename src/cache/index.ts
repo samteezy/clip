@@ -1,1 +1,7 @@
-export { MemoryCache, toolCacheKey, resourceCacheKey } from "./memory.js";
+export {
+  MemoryCache,
+  toolCacheKey,
+  resourceCacheKey,
+  normalizeGoal,
+  compressedResultCacheKey,
+} from "./memory.js";

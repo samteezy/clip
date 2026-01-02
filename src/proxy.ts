@@ -1,4 +1,5 @@
 import express from "express";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { MCPCPConfig, UpstreamStatus } from "./types.js";
 import { UpstreamClient, DownstreamServer, Aggregator, Router } from "./mcp/index.js";
 import { Compressor } from "./compression/index.js";
@@ -41,7 +42,7 @@ export async function createProxy(config: MCPCPConfig, configPath: string): Prom
   }
 
   const router = new Router(aggregator, masker);
-  const cache = new MemoryCache(config.cache);
+  const cache = new MemoryCache<CallToolResult>(config.cache);
 
   // Create upstream clients
   let upstreamClients: UpstreamClient[] = [];
@@ -63,6 +64,9 @@ export async function createProxy(config: MCPCPConfig, configPath: string): Prom
     aggregator,
     router,
     compressor,
+    cache,
+    cacheConfig: config.cache,
+    resolver,
   });
 
   // Express app for HTTP transports
@@ -133,6 +137,8 @@ export async function createProxy(config: MCPCPConfig, configPath: string): Prom
 
     // Update cache config
     cache.updateConfig(newConfig.cache);
+    downstreamServer.setCacheConfig(newConfig.cache);
+    downstreamServer.setResolver(resolver);
 
     // Create new upstream clients
     for (const upstreamConfig of newConfig.upstreams) {

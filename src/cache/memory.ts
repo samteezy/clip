@@ -158,3 +158,25 @@ export function toolCacheKey(
 export function resourceCacheKey(uri: string): string {
   return `resource:${uri}`;
 }
+
+/**
+ * Normalize a goal string for cache key consistency
+ * Converts to lowercase and removes punctuation
+ */
+export function normalizeGoal(goal: string): string {
+  return goal.toLowerCase().replace(/[^\w\s]/g, "").trim();
+}
+
+/**
+ * Generate a cache key for compressed tool responses
+ * Includes normalized goal for goal-aware compression caching
+ */
+export function compressedResultCacheKey(
+  toolName: string,
+  args: Record<string, unknown>,
+  goal?: string
+): string {
+  const argsHash = JSON.stringify(args, Object.keys(args).sort());
+  const goalPart = goal ? `:${normalizeGoal(goal)}` : "";
+  return `compressed:${toolName}:${argsHash}${goalPart}`;
+}

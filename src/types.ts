@@ -128,6 +128,8 @@ export interface ToolConfig {
   masking?: MaskingPolicy;
   /** Override the tool description exposed to clients */
   overwriteDescription?: string;
+  /** Cache TTL in seconds for this tool (0 = no caching, undefined = use global) */
+  cacheTtl?: number;
 }
 
 /**
@@ -219,6 +221,8 @@ export interface CacheConfig {
   ttlSeconds: number;
   /** Maximum cache entries */
   maxEntries: number;
+  /** Cache error responses (default: true) */
+  cacheErrors?: boolean;
 }
 
 /**
