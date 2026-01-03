@@ -18,6 +18,29 @@ npm run lint         # ESLint
 npm run typecheck    # TypeScript type checking
 ```
 
+## Release Management
+
+Releases are automated via GitHub Actions with npm trusted publishing (OIDC).
+
+**Standard release:**
+```bash
+npm version patch    # or minor, major
+git push --follow-tags
+```
+
+This bumps the version, creates a git tag, and triggers the workflow which:
+- Runs tests and build
+- Publishes to npm with provenance
+- Creates a GitHub release with auto-generated notes
+
+**Manual release** (if tag push didn't trigger):
+1. Go to Actions → Release → "Run workflow"
+2. Enter the tag name (e.g., `v0.3.1`)
+
+**Setup notes:**
+- Trusted publishing configured on npmjs.com (no NPM_TOKEN needed)
+- Workflow: `.github/workflows/release.yml`
+
 ## Architecture
 
 ```

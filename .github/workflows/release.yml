@@ -4,7 +4,12 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:  # Allows manual trigger from GitHub UI
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name for release (e.g., v0.3.1)'
+        required: true
+        type: string
 
 permissions:
   id-token: write   # Required for npm trusted publishing (OIDC)
@@ -29,4 +34,5 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
           generate_release_notes: true
