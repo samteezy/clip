@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
 
 permissions:
   id-token: write   # Required for npm trusted publishing (OIDC)
