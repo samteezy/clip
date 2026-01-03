@@ -45,6 +45,22 @@ export class UpstreamClient {
   }
 
   /**
+   * Check if upstream supports resources capability
+   */
+  supportsResources(): boolean {
+    const caps = this.client.getServerCapabilities();
+    return !!caps?.resources;
+  }
+
+  /**
+   * Check if upstream supports prompts capability
+   */
+  supportsPrompts(): boolean {
+    const caps = this.client.getServerCapabilities();
+    return !!caps?.prompts;
+  }
+
+  /**
    * Connect to the upstream server
    */
   async connect(): Promise<void> {
@@ -101,15 +117,11 @@ export class UpstreamClient {
    */
   async listResources(): Promise<Resource[]> {
     this.ensureConnected();
-    try {
-      const result = await this.client.listResources();
-      return result.resources;
-    } catch (error) {
-      // Server may not support resources - log for debugging
-      const logger = getLogger();
-      logger.debug(`Upstream '${this.config.id}' does not support resources: ${error}`);
+    if (!this.supportsResources()) {
       return [];
     }
+    const result = await this.client.listResources();
+    return result.resources;
   }
 
   /**
@@ -117,15 +129,11 @@ export class UpstreamClient {
    */
   async listPrompts(): Promise<Prompt[]> {
     this.ensureConnected();
-    try {
-      const result = await this.client.listPrompts();
-      return result.prompts;
-    } catch (error) {
-      // Server may not support prompts - log for debugging
-      const logger = getLogger();
-      logger.debug(`Upstream '${this.config.id}' does not support prompts: ${error}`);
+    if (!this.supportsPrompts()) {
       return [];
     }
+    const result = await this.client.listPrompts();
+    return result.prompts;
   }
 
   /**
