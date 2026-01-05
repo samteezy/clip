@@ -355,7 +355,14 @@ describe("ToolConfigResolver - Masking Policy Resolution", () => {
     const config = createTestConfig({ upstreams });
     config.masking = {
       enabled: true,
-      defaultPolicy: {
+      llmConfig: {
+        baseUrl: "http://localhost:8080/v1",
+        model: "test",
+      },
+    };
+    config.defaults = {
+      ...config.defaults,
+      masking: {
         enabled: true,
         piiTypes: ["email", "ssn"],
         llmFallback: false,
@@ -388,12 +395,13 @@ describe("ToolConfigResolver - Masking Policy Resolution", () => {
     const config = createTestConfig({ upstreams });
     config.masking = {
       enabled: true,
-      defaultPolicy: {
-        enabled: true,
-        piiTypes: ["email"],
-        llmFallback: false,
-        llmFallbackThreshold: "low",
-      },
+    };
+    config.defaults = config.defaults || {};
+    config.defaults.masking = {
+      enabled: true,
+      piiTypes: ["email"],
+      llmFallback: false,
+      llmFallbackThreshold: "low",
     };
     const resolver = new ToolConfigResolver(config);
 
@@ -420,7 +428,14 @@ describe("ToolConfigResolver - Masking Policy Resolution", () => {
     const config = createTestConfig({ upstreams });
     config.masking = {
       enabled: true,
-      defaultPolicy: {
+      llmConfig: {
+        baseUrl: "http://localhost:8080/v1",
+        model: "test",
+      },
+    };
+    config.defaults = {
+      ...config.defaults,
+      masking: {
         enabled: true,
         piiTypes: ["email", "ssn"],
         llmFallback: true,
@@ -527,8 +542,8 @@ describe("ToolConfigResolver - Description Override", () => {
   });
 });
 
-describe("ToolConfigResolver - Cache TTL (via getToolConfig)", () => {
-  it("should return undefined when no cacheTtl configured", () => {
+describe("ToolConfigResolver - Cache Config (via getToolConfig)", () => {
+  it("should return undefined when no cache configured", () => {
     const upstreams: UpstreamServerConfig[] = [
       {
         id: "test",
@@ -543,10 +558,10 @@ describe("ToolConfigResolver - Cache TTL (via getToolConfig)", () => {
     const resolver = new ToolConfigResolver(createTestConfig({ upstreams }));
 
     const config = resolver.getToolConfig("test__mytool");
-    expect(config?.cacheTtl).toBeUndefined();
+    expect(config?.cache).toBeUndefined();
   });
 
-  it("should return custom cacheTtl when configured", () => {
+  it("should return custom cache config when configured", () => {
     const upstreams: UpstreamServerConfig[] = [
       {
         id: "test",
@@ -555,7 +570,9 @@ describe("ToolConfigResolver - Cache TTL (via getToolConfig)", () => {
         command: "echo",
         tools: {
           mytool: {
-            cacheTtl: 300,
+            cache: {
+              ttlSeconds: 300,
+            },
           },
         },
       },
@@ -563,10 +580,10 @@ describe("ToolConfigResolver - Cache TTL (via getToolConfig)", () => {
     const resolver = new ToolConfigResolver(createTestConfig({ upstreams }));
 
     const config = resolver.getToolConfig("test__mytool");
-    expect(config?.cacheTtl).toBe(300);
+    expect(config?.cache?.ttlSeconds).toBe(300);
   });
 
-  it("should handle cacheTtl of 0 (no caching)", () => {
+  it("should handle disabled cache", () => {
     const upstreams: UpstreamServerConfig[] = [
       {
         id: "test",
@@ -575,7 +592,9 @@ describe("ToolConfigResolver - Cache TTL (via getToolConfig)", () => {
         command: "echo",
         tools: {
           realtime_tool: {
-            cacheTtl: 0,
+            cache: {
+              enabled: false,
+            },
           },
         },
       },
@@ -583,7 +602,7 @@ describe("ToolConfigResolver - Cache TTL (via getToolConfig)", () => {
     const resolver = new ToolConfigResolver(createTestConfig({ upstreams }));
 
     const config = resolver.getToolConfig("test__realtime_tool");
-    expect(config?.cacheTtl).toBe(0);
+    expect(config?.cache?.enabled).toBe(false);
   });
 });
 
@@ -651,7 +670,9 @@ describe("ToolConfigResolver - Goal Aware", () => {
       },
     ];
     const config = createTestConfig({ upstreams });
-    config.compression.goalAware = true;
+    config.defaults = config.defaults || {};
+    config.defaults.compression = config.defaults.compression || {};
+    config.defaults.compression.goalAware = true;
     const resolver = new ToolConfigResolver(config);
 
     expect(resolver.isGoalAwareEnabled("test__mytool")).toBe(true);
@@ -674,7 +695,9 @@ describe("ToolConfigResolver - Goal Aware", () => {
       },
     ];
     const config = createTestConfig({ upstreams });
-    config.compression.goalAware = true;
+    config.defaults = config.defaults || {};
+    config.defaults.compression = config.defaults.compression || {};
+    config.defaults.compression.goalAware = true;
     const resolver = new ToolConfigResolver(config);
 
     expect(resolver.isGoalAwareEnabled("test__mytool")).toBe(false);
@@ -714,5 +737,514 @@ describe("ToolConfigResolver - Bypass Enabled", () => {
     const resolver = new ToolConfigResolver(config);
 
     expect(resolver.isBypassEnabled()).toBe(false);
+  });
+});
+
+describe("ToolConfigResolver - Upstream-Level Compression Defaults", () => {
+  it("should use upstream defaults.compression when configured", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        defaults: {
+          compression: {
+            enabled: false,
+            tokenThreshold: 2000,
+            maxOutputTokens: 500,
+          },
+        },
+        tools: {
+          mytool: {},
+        },
+      },
+    ];
+    const resolver = new ToolConfigResolver(createTestConfig({ upstreams }));
+
+    const policy = resolver.resolveCompressionPolicy("test__mytool");
+    expect(policy.enabled).toBe(false); // From upstream defaults
+    expect(policy.tokenThreshold).toBe(2000); // From upstream defaults
+    expect(policy.maxOutputTokens).toBe(500); // From upstream defaults
+  });
+
+  it("should merge upstream defaults with global defaults", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        defaults: {
+          compression: {
+            tokenThreshold: 3000, // Override threshold only
+          },
+        },
+        tools: {
+          mytool: {},
+        },
+      },
+    ];
+    const config = createTestConfig({ upstreams });
+    // Global defaults: enabled: true, tokenThreshold: 1000
+    const resolver = new ToolConfigResolver(config);
+
+    const policy = resolver.resolveCompressionPolicy("test__mytool");
+    expect(policy.enabled).toBe(true); // From global default
+    expect(policy.tokenThreshold).toBe(3000); // From upstream default
+  });
+
+  it("should allow tool-level to override upstream defaults", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        defaults: {
+          compression: {
+            enabled: false,
+            tokenThreshold: 2000,
+          },
+        },
+        tools: {
+          mytool: {
+            compression: {
+              enabled: true, // Tool overrides upstream
+              tokenThreshold: 5000, // Tool overrides upstream
+            },
+          },
+        },
+      },
+    ];
+    const resolver = new ToolConfigResolver(createTestConfig({ upstreams }));
+
+    const policy = resolver.resolveCompressionPolicy("test__mytool");
+    expect(policy.enabled).toBe(true); // From tool override
+    expect(policy.tokenThreshold).toBe(5000); // From tool override
+  });
+
+  it("should verify three-level hierarchy: global → upstream → tool", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        defaults: {
+          compression: {
+            tokenThreshold: 3000, // Upstream level
+          },
+        },
+        tools: {
+          tool1: {}, // Uses upstream default (3000)
+          tool2: {
+            compression: {
+              tokenThreshold: 5000, // Tool level
+            },
+          },
+        },
+      },
+    ];
+    const config = createTestConfig({ upstreams });
+    if (config.defaults.compression) {
+      config.defaults.compression.tokenThreshold = 1000; // Global level
+    }
+    const resolver = new ToolConfigResolver(config);
+
+    const policy1 = resolver.resolveCompressionPolicy("test__tool1");
+    expect(policy1.tokenThreshold).toBe(3000); // Upstream wins over global
+
+    const policy2 = resolver.resolveCompressionPolicy("test__tool2");
+    expect(policy2.tokenThreshold).toBe(5000); // Tool wins over upstream
+  });
+});
+
+describe("ToolConfigResolver - Upstream-Level Masking Defaults", () => {
+  it("should use upstream defaults.masking when configured", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        defaults: {
+          masking: {
+            enabled: true,
+            piiTypes: ["phone"],
+            llmFallback: true,
+            llmFallbackThreshold: "high",
+          },
+        },
+        tools: {
+          mytool: {},
+        },
+      },
+    ];
+    const config = createTestConfig({ upstreams });
+    config.masking = {
+      enabled: true,
+      llmConfig: { baseUrl: "http://localhost", model: "test" },
+    };
+    const resolver = new ToolConfigResolver(config);
+
+    const policy = resolver.resolveMaskingPolicy("test__mytool");
+    expect(policy.enabled).toBe(true); // From upstream defaults
+    expect(policy.piiTypes).toEqual(["phone"]); // From upstream defaults
+    expect(policy.llmFallback).toBe(true); // From upstream defaults
+    expect(policy.llmFallbackThreshold).toBe("high"); // From upstream defaults
+  });
+
+  it("should merge upstream masking defaults with global defaults", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        defaults: {
+          masking: {
+            piiTypes: ["phone", "ssn"], // Override piiTypes only
+          },
+        },
+        tools: {
+          mytool: {},
+        },
+      },
+    ];
+    const config = createTestConfig({ upstreams });
+    config.masking = {
+      enabled: true,
+      llmConfig: { baseUrl: "http://localhost", model: "test" },
+    };
+    config.defaults.masking = {
+      enabled: true,
+      piiTypes: ["email", "credit_card", "ssn", "phone", "ip_address"],
+      llmFallback: false,
+      llmFallbackThreshold: "low",
+    };
+    const resolver = new ToolConfigResolver(config);
+
+    const policy = resolver.resolveMaskingPolicy("test__mytool");
+    expect(policy.enabled).toBe(true); // From global default
+    expect(policy.piiTypes).toEqual(["phone", "ssn"]); // From upstream default
+    expect(policy.llmFallback).toBe(false); // From global default
+    expect(policy.llmFallbackThreshold).toBe("low"); // From global default
+  });
+
+  it("should allow tool-level to override upstream masking defaults", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        defaults: {
+          masking: {
+            enabled: true,
+            piiTypes: ["phone"],
+          },
+        },
+        tools: {
+          mytool: {
+            masking: {
+              enabled: false, // Tool overrides upstream
+              piiTypes: ["email"], // Tool overrides upstream
+            },
+          },
+        },
+      },
+    ];
+    const config = createTestConfig({ upstreams });
+    config.masking = {
+      enabled: true,
+      llmConfig: { baseUrl: "http://localhost", model: "test" },
+    };
+    const resolver = new ToolConfigResolver(config);
+
+    const policy = resolver.resolveMaskingPolicy("test__mytool");
+    expect(policy.enabled).toBe(false); // From tool override
+    expect(policy.piiTypes).toEqual(["email"]); // From tool override
+  });
+
+  it("should verify three-level hierarchy: global → upstream → tool", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        defaults: {
+          masking: {
+            piiTypes: ["phone", "ssn"], // Upstream level
+          },
+        },
+        tools: {
+          tool1: {}, // Uses upstream default
+          tool2: {
+            masking: {
+              piiTypes: ["email"], // Tool level
+            },
+          },
+        },
+      },
+    ];
+    const config = createTestConfig({ upstreams });
+    config.masking = {
+      enabled: true,
+      llmConfig: { baseUrl: "http://localhost", model: "test" },
+    };
+    config.defaults.masking = {
+      enabled: true,
+      piiTypes: ["email", "credit_card", "ssn", "phone", "ip_address"], // Global level
+      llmFallback: false,
+      llmFallbackThreshold: "low",
+    };
+    const resolver = new ToolConfigResolver(config);
+
+    const policy1 = resolver.resolveMaskingPolicy("test__tool1");
+    expect(policy1.piiTypes).toEqual(["phone", "ssn"]); // Upstream wins over global
+
+    const policy2 = resolver.resolveMaskingPolicy("test__tool2");
+    expect(policy2.piiTypes).toEqual(["email"]); // Tool wins over upstream
+  });
+});
+
+describe("ToolConfigResolver - Cache Policy Resolution", () => {
+  it("should return defaults when no cache config", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        tools: {
+          mytool: {},
+        },
+      },
+    ];
+    const resolver = new ToolConfigResolver(createTestConfig({ upstreams }));
+
+    const policy = resolver.resolveCachePolicy("test__mytool");
+    expect(policy.enabled).toBe(true); // From createTestConfig defaults
+    expect(policy.ttlSeconds).toBe(60); // From createTestConfig defaults
+  });
+
+  it("should use global defaults.cache when configured", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        tools: {
+          mytool: {},
+        },
+      },
+    ];
+    const config = createTestConfig({ upstreams });
+    config.defaults.cache = {
+      enabled: false,
+      ttlSeconds: 600,
+    };
+    const resolver = new ToolConfigResolver(config);
+
+    const policy = resolver.resolveCachePolicy("test__mytool");
+    expect(policy.enabled).toBe(false); // From global defaults
+    expect(policy.ttlSeconds).toBe(600); // From global defaults
+  });
+
+  it("should use upstream defaults.cache when configured", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        defaults: {
+          cache: {
+            enabled: false,
+            ttlSeconds: 900,
+          },
+        },
+        tools: {
+          mytool: {},
+        },
+      },
+    ];
+    const resolver = new ToolConfigResolver(createTestConfig({ upstreams }));
+
+    const policy = resolver.resolveCachePolicy("test__mytool");
+    expect(policy.enabled).toBe(false); // From upstream defaults
+    expect(policy.ttlSeconds).toBe(900); // From upstream defaults
+  });
+
+  it("should use tool-level cache when configured", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        tools: {
+          mytool: {
+            cache: {
+              enabled: false,
+              ttlSeconds: 120,
+            },
+          },
+        },
+      },
+    ];
+    const resolver = new ToolConfigResolver(createTestConfig({ upstreams }));
+
+    const policy = resolver.resolveCachePolicy("test__mytool");
+    expect(policy.enabled).toBe(false); // From tool override
+    expect(policy.ttlSeconds).toBe(120); // From tool override
+  });
+
+  it("should merge upstream cache defaults with global defaults", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        defaults: {
+          cache: {
+            ttlSeconds: 1200, // Override ttlSeconds only
+          },
+        },
+        tools: {
+          mytool: {},
+        },
+      },
+    ];
+    const config = createTestConfig({ upstreams });
+    config.defaults.cache = {
+      enabled: false, // Global
+      ttlSeconds: 300, // Will be overridden
+    };
+    const resolver = new ToolConfigResolver(config);
+
+    const policy = resolver.resolveCachePolicy("test__mytool");
+    expect(policy.enabled).toBe(false); // From global default
+    expect(policy.ttlSeconds).toBe(1200); // From upstream default
+  });
+
+  it("should allow partial tool-level overrides", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        defaults: {
+          cache: {
+            enabled: true,
+            ttlSeconds: 600,
+          },
+        },
+        tools: {
+          mytool: {
+            cache: {
+              ttlSeconds: 180, // Override ttlSeconds only
+            },
+          },
+        },
+      },
+    ];
+    const resolver = new ToolConfigResolver(createTestConfig({ upstreams }));
+
+    const policy = resolver.resolveCachePolicy("test__mytool");
+    expect(policy.enabled).toBe(true); // From upstream default
+    expect(policy.ttlSeconds).toBe(180); // From tool override
+  });
+
+  it("should verify three-level hierarchy: global → upstream → tool", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        defaults: {
+          cache: {
+            ttlSeconds: 900, // Upstream level
+          },
+        },
+        tools: {
+          tool1: {}, // Uses upstream default (900)
+          tool2: {
+            cache: {
+              ttlSeconds: 60, // Tool level
+            },
+          },
+        },
+      },
+    ];
+    const config = createTestConfig({ upstreams });
+    config.defaults.cache = {
+      enabled: true,
+      ttlSeconds: 300, // Global level
+    };
+    const resolver = new ToolConfigResolver(config);
+
+    const policy1 = resolver.resolveCachePolicy("test__tool1");
+    expect(policy1.ttlSeconds).toBe(900); // Upstream wins over global
+
+    const policy2 = resolver.resolveCachePolicy("test__tool2");
+    expect(policy2.ttlSeconds).toBe(60); // Tool wins over upstream
+  });
+
+  it("should return correct structure for ResolvedCachePolicy", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        tools: {
+          mytool: {
+            cache: {
+              enabled: false,
+              ttlSeconds: 120,
+            },
+          },
+        },
+      },
+    ];
+    const resolver = new ToolConfigResolver(createTestConfig({ upstreams }));
+
+    const policy = resolver.resolveCachePolicy("test__mytool");
+
+    // Verify structure
+    expect(policy).toHaveProperty("enabled");
+    expect(policy).toHaveProperty("ttlSeconds");
+    expect(typeof policy.enabled).toBe("boolean");
+    expect(typeof policy.ttlSeconds).toBe("number");
+  });
+
+  it("should handle cache disabled case", () => {
+    const upstreams: UpstreamServerConfig[] = [
+      {
+        id: "test",
+        name: "Test",
+        transport: "stdio",
+        command: "echo",
+        tools: {
+          mytool: {
+            cache: {
+              enabled: false,
+            },
+          },
+        },
+      },
+    ];
+    const resolver = new ToolConfigResolver(createTestConfig({ upstreams }));
+
+    const policy = resolver.resolveCachePolicy("test__mytool");
+    expect(policy.enabled).toBe(false);
+    expect(policy.ttlSeconds).toBeDefined(); // Should still have ttlSeconds from defaults
   });
 });

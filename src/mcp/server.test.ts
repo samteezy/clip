@@ -111,6 +111,7 @@ describe("DownstreamServer", () => {
     mockResolver = {
       getToolConfig: vi.fn().mockReturnValue({}),
       getRetryEscalation: vi.fn().mockReturnValue(undefined),
+      resolveCachePolicy: vi.fn().mockReturnValue({ enabled: true, ttlSeconds: 60 }),
     };
   });
 
@@ -643,13 +644,14 @@ describe("DownstreamServer", () => {
       expect(mockCache.set).toHaveBeenCalledWith(
         expect.any(String),
         compressedResult,
-        undefined
+        60 // Default TTL from mock resolver
       );
     });
 
     it("should respect per-tool cache TTL", async () => {
-      vi.mocked(mockResolver.getToolConfig!).mockReturnValue({
-        cacheTtl: 120,
+      vi.mocked(mockResolver.resolveCachePolicy!).mockReturnValue({
+        enabled: true,
+        ttlSeconds: 120,
       });
 
       const toolResult: CallToolResult = {
@@ -675,9 +677,10 @@ describe("DownstreamServer", () => {
       );
     });
 
-    it("should skip caching when tool cacheTtl is 0", async () => {
-      vi.mocked(mockResolver.getToolConfig!).mockReturnValue({
-        cacheTtl: 0,
+    it("should skip caching when cache is disabled", async () => {
+      vi.mocked(mockResolver.resolveCachePolicy!).mockReturnValue({
+        enabled: false,
+        ttlSeconds: 0,
       });
 
       const toolResult: CallToolResult = {
