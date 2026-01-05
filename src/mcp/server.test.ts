@@ -133,7 +133,7 @@ describe("DownstreamServer", () => {
     });
 
     it("should start retry cleanup interval", () => {
-      const server = new DownstreamServer({
+      new DownstreamServer({
         config: { transport: "stdio" },
         aggregator: mockAggregator as Aggregator,
         router: mockRouter as Router,
@@ -258,7 +258,7 @@ describe("DownstreamServer", () => {
         compressor: mockCompressor as Compressor,
       });
 
-      server.setCacheConfig({ enabled: true, ttlSeconds: 120, maxEntries: 200 });
+      server.setCacheConfig({ maxEntries: 200 });
 
       expect(true).toBe(true);
     });
@@ -503,7 +503,7 @@ describe("DownstreamServer", () => {
         router: mockRouter as Router,
         compressor: mockCompressor as Compressor,
         cache: mockCache as MemoryCache<CallToolResult>,
-        cacheConfig: { enabled: true, ttlSeconds: 60, maxEntries: 100 },
+        cacheConfig: { maxEntries: 100 },
         resolver: mockResolver as ToolConfigResolver,
       });
 
@@ -705,8 +705,6 @@ describe("DownstreamServer", () => {
 
     it("should not cache errors when cacheErrors is false", async () => {
       server.setCacheConfig({
-        enabled: true,
-        ttlSeconds: 60,
         maxEntries: 100,
         cacheErrors: false,
       });
@@ -733,8 +731,6 @@ describe("DownstreamServer", () => {
 
     it("should cache errors when cacheErrors is true", async () => {
       server.setCacheConfig({
-        enabled: true,
-        ttlSeconds: 60,
         maxEntries: 100,
         cacheErrors: true,
       });
@@ -763,8 +759,7 @@ describe("DownstreamServer", () => {
       vi.mocked(mockResolver.getRetryEscalation!).mockReturnValue({
         enabled: true,
         windowSeconds: 300,
-        multiplierPerRetry: 1.5,
-        maxMultiplier: 3.0,
+        tokenMultiplier: 1.5,
       });
 
       const toolResult: CallToolResult = {

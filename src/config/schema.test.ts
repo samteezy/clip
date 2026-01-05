@@ -639,7 +639,7 @@ describe("configSchema", () => {
     if (result.success) {
       expect(result.data.cache).toBeDefined();
       expect(result.data.cache.maxEntries).toBe(1000);
-      expect(result.data.defaults.cache.enabled).toBe(true);
+      expect(result.data.defaults.cache!.enabled).toBe(true);
     }
   });
 

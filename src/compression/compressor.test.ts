@@ -41,6 +41,7 @@ describe("Compressor", () => {
         enabled: true,
         tokenThreshold: 1000,
         maxOutputTokens: 2000,
+        goalAware: true,
       }),
     };
 
@@ -48,10 +49,6 @@ describe("Compressor", () => {
       {
         baseUrl: "http://localhost:8080/v1",
         model: "test-model",
-        defaultPolicy: {
-          enabled: true,
-          tokenThreshold: 1000,
-        },
       },
       mockResolver as ToolConfigResolver
     );
@@ -72,6 +69,7 @@ describe("Compressor", () => {
         enabled: true,
         tokenThreshold: 1000,
         maxOutputTokens: 2000,
+        goalAware: true,
       });
     });
 
@@ -99,7 +97,7 @@ describe("Compressor", () => {
 
       const result = await compressor.compress(
         "test content",
-        { enabled: false, tokenThreshold: 1000 }
+        { enabled: false, tokenThreshold: 1000, goalAware: false }
       );
 
       expect(result.wasCompressed).toBe(false);
@@ -113,7 +111,7 @@ describe("Compressor", () => {
 
       const result = await compressor.compress(
         "short content",
-        { enabled: true, tokenThreshold: 1000 }
+        { enabled: true, tokenThreshold: 1000, goalAware: true }
       );
 
       expect(result.wasCompressed).toBe(false);
@@ -131,7 +129,7 @@ describe("Compressor", () => {
 
       const result = await compressor.compress(
         "long content that exceeds threshold",
-        { enabled: true, tokenThreshold: 1000, maxOutputTokens: 2000 }
+        { enabled: true, tokenThreshold: 1000, maxOutputTokens: 2000, goalAware: true }
       );
 
       expect(result.wasCompressed).toBe(true);
@@ -148,7 +146,7 @@ describe("Compressor", () => {
 
       await compressor.compress(
         "content",
-        { enabled: true, tokenThreshold: 1000, maxOutputTokens: 2000 },
+        { enabled: true, tokenThreshold: 1000, maxOutputTokens: 2000, goalAware: true },
         "Find user information"
       );
 
@@ -167,7 +165,7 @@ describe("Compressor", () => {
 
       const result = await compressor.compress(
         "content",
-        { enabled: true, tokenThreshold: 1000 }
+        { enabled: true, tokenThreshold: 1000, goalAware: true }
       );
 
       expect(result.compressed).toBe("Main response content");
@@ -184,7 +182,7 @@ describe("Compressor", () => {
 
       const result = await compressor.compress(
         "content",
-        { enabled: true, tokenThreshold: 1000 }
+        { enabled: true, tokenThreshold: 1000, goalAware: true }
       );
 
       expect(result.compressed).toBe("Fallback content");
@@ -197,7 +195,7 @@ describe("Compressor", () => {
 
       const result = await compressor.compress(
         "content",
-        { enabled: true, tokenThreshold: 1000 }
+        { enabled: true, tokenThreshold: 1000, goalAware: true }
       );
 
       expect(result.wasCompressed).toBe(false);
@@ -210,7 +208,7 @@ describe("Compressor", () => {
 
       const result = await compressor.compress(
         "content",
-        { enabled: true, tokenThreshold: 1000 }
+        { enabled: true, tokenThreshold: 1000, goalAware: true }
       );
 
       expect(result.wasCompressed).toBe(false);
@@ -226,7 +224,7 @@ describe("Compressor", () => {
       const jsonContent = '{"key": "value", "array": [1, 2, 3]}';
       const result = await compressor.compress(
         jsonContent,
-        { enabled: true, tokenThreshold: 1000 }
+        { enabled: true, tokenThreshold: 1000, goalAware: true }
       );
 
       expect(result.strategy).toBe("json");
@@ -241,6 +239,7 @@ describe("Compressor", () => {
         {
           enabled: true,
           tokenThreshold: 1000,
+          goalAware: true,
           customInstructions: "Focus on key points only",
         }
       );
@@ -256,7 +255,7 @@ describe("Compressor", () => {
 
       await compressor.compress(
         "content",
-        { enabled: true, tokenThreshold: 1000, maxOutputTokens: 3000 }
+        { enabled: true, tokenThreshold: 1000, maxOutputTokens: 3000, goalAware: true }
       );
 
       const call = mockGenerateText.mock.calls[0][0];
@@ -269,6 +268,7 @@ describe("Compressor", () => {
       vi.mocked(mockResolver.resolveCompressionPolicy!).mockReturnValue({
         enabled: false,
         tokenThreshold: 1000,
+        goalAware: false,
       });
 
       const result: CallToolResult = {
@@ -337,6 +337,7 @@ describe("Compressor", () => {
         enabled: true,
         tokenThreshold: 1000,
         maxOutputTokens: 2000,
+        goalAware: true,
       });
 
       const result: CallToolResult = {
@@ -357,6 +358,7 @@ describe("Compressor", () => {
         enabled: true,
         tokenThreshold: 1000,
         maxOutputTokens: 2000,
+        goalAware: true,
       });
 
       const result: CallToolResult = {
@@ -487,6 +489,7 @@ describe("Compressor", () => {
       vi.mocked(mockResolver.resolveCompressionPolicy!).mockReturnValue({
         enabled: false,
         tokenThreshold: 1000,
+        goalAware: false,
       });
 
       const result: ReadResourceResult = {

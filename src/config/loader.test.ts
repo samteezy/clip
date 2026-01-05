@@ -160,12 +160,6 @@ describe("loadConfig", () => {
       const config = createTestConfig({
         masking: {
           enabled: true,
-          defaultPolicy: {
-            enabled: true,
-            piiTypes: ["email", "ssn"],
-            llmFallback: false,
-            llmFallbackThreshold: "low",
-          },
         },
       });
 
@@ -410,21 +404,21 @@ describe("generateExampleConfig", () => {
   it("should have compression enabled by default", () => {
     const config = generateExampleConfig();
 
-    expect(config.defaults.compression.enabled).toBe(true);
-    expect(config.defaults.compression.tokenThreshold).toBeGreaterThan(0);
+    expect(config.defaults.compression!.enabled).toBe(true);
+    expect(config.defaults.compression!.tokenThreshold).toBeGreaterThan(0);
   });
 
   it("should have cache enabled by default", () => {
     const config = generateExampleConfig();
 
-    expect(config.defaults.cache.enabled).toBe(true);
-    expect(config.defaults.cache.ttlSeconds).toBeGreaterThan(0);
+    expect(config.defaults.cache!.enabled).toBe(true);
+    expect(config.defaults.cache!.ttlSeconds).toBeGreaterThan(0);
     expect(config.cache.maxEntries).toBeGreaterThan(0);
   });
 
   it("should have goalAware enabled", () => {
     const config = generateExampleConfig();
-    expect(config.defaults.compression.goalAware).toBe(true);
+    expect(config.defaults.compression!.goalAware).toBe(true);
   });
 
   it("should have log level set", () => {

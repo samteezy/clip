@@ -186,7 +186,7 @@ describe("Aggregator", () => {
     });
 
     it("should skip disconnected upstreams", async () => {
-      mockClient1.isConnected = false;
+      vi.spyOn(mockClient1, 'isConnected', 'get').mockReturnValue(false);
 
       const tool: Tool = {
         name: "tool1",

@@ -18,7 +18,6 @@ import type {
   MaskingConfig,
   CompressionPolicy,
   MaskingPolicy,
-  TransportType,
 } from "../types.js";
 
 /**
